@@ -1,21 +1,28 @@
+/**
+ * Root Layout - App entry point with providers
+ * @module app/_layout
+ */
+
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { AppLifecycle } from '../src/appLifecycle/AppLifecycle';
+import { FallbackLoader } from '../src/components/FallbackLoader';
+import { ToasterProvider } from '../src/contexts/ToasterContext';
+import { SecurityProvider } from '../src/security/SecurityContext';
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  // Ensure proper initial route handling
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -39,21 +46,65 @@ export default function RootLayout() {
   }, [loaded]);
 
   if (!loaded) {
-    return null;
+    return <FallbackLoader message="Loading fonts..." />;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <SecurityProvider>
+      <ToasterProvider>
+        <AppLifecycle>
+          <RootLayoutNav />
+        </AppLifecycle>
+      </ToasterProvider>
+    </SecurityProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#0F0F23',
+          },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+          contentStyle: {
+            backgroundColor: '#0F0F23',
+          },
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="setup"
+          options={{
+            title: 'Create Password',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="login"
+          options={{
+            title: 'Unlock Vault',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="home"
+          options={{
+            title: 'My Vault',
+            headerShown: false,
+            gestureEnabled: false, // Prevent swipe back
+          }}
+        />
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }
