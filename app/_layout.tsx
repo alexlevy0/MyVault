@@ -16,8 +16,8 @@ import { ToasterProvider } from '../src/contexts/ToasterContext';
 import { SecurityProvider } from '../src/security/SecurityContext';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary
+    // Catch any errors thrown by the Layout component.
+    ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -102,6 +102,14 @@ function RootLayoutNav() {
             title: 'My Vault',
             headerShown: false,
             gestureEnabled: false, // Prevent swipe back
+          }}
+        />
+        <Stack.Screen
+          name="add-item"
+          options={{
+            title: 'Add Item',
+            presentation: 'modal',
+            headerShown: false,
           }}
         />
       </Stack>
