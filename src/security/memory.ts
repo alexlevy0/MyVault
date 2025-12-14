@@ -36,32 +36,55 @@ export function getMemoryKey(key: string): string | null {
 
 /**
  * Remove a specific key from memory storage
- * Overwrites the value before deletion to minimize memory exposure
+ * Overwrites the value multiple times before deletion to minimize memory exposure
  * @param key - Storage key to remove
  */
 export function removeMemoryKey(key: string): void {
     const value = memoryStore.get(key);
     if (value !== undefined) {
-        // Overwrite with zeros before removing to minimize memory exposure
-        // Note: This is a best-effort approach in JavaScript
-        memoryStore.set(key, '\0'.repeat(value.length));
+        // Multiple overwrites to minimize memory exposure
+        // Note: This is a best-effort approach in JavaScript's GC environment
+        const length = value.length;
+        memoryStore.set(key, '\0'.repeat(length));
+        memoryStore.set(key, '\xFF'.repeat(length));
+        memoryStore.set(key, '\0'.repeat(length));
+        memoryStore.set(key, '\xAA'.repeat(length));
+        memoryStore.set(key, '\0'.repeat(length));
     }
     memoryStore.delete(key);
 }
 
 /**
  * Clear all sensitive data from memory
- * Overwrites all values before clearing to minimize memory exposure
+ * Overwrites all values multiple times before clearing to minimize memory exposure
  * Should be called on logout, lock, or app termination
  */
 export function clearAllMemory(): void {
-    // Overwrite all values with zeros before clearing
+    // Multiple overwrites to minimize memory exposure
     // This is a best-effort approach to minimize memory exposure
     // in JavaScript's garbage-collected environment
-    for (const [key, value] of memoryStore) {
-        memoryStore.set(key, '\0'.repeat(value.length));
+    const entries = Array.from(memoryStore.entries());
+    
+    for (const [key, value] of entries) {
+        const length = value.length;
+        // Multiple overwrite passes
+        memoryStore.set(key, '\0'.repeat(length));
+        memoryStore.set(key, '\xFF'.repeat(length));
+        memoryStore.set(key, '\0'.repeat(length));
+        memoryStore.set(key, '\xAA'.repeat(length));
+        memoryStore.set(key, '\0'.repeat(length));
     }
+    
     memoryStore.clear();
+    
+    // Force garbage collection hint (if available)
+    if (global.gc && typeof global.gc === 'function') {
+        try {
+            global.gc();
+        } catch (e) {
+            // Ignore GC errors
+        }
+    }
 }
 
 /**

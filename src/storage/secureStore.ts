@@ -28,8 +28,10 @@ export async function setSecureItem(key: string, value: string): Promise<void> {
             keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         });
     } catch (error) {
-        console.error(`[SecureStore] Failed to set item: ${key}`, error);
-        throw new Error(`Failed to store secure item: ${key}`);
+        if (__DEV__) {
+            console.error(`[SecureStore] Failed to set item: ${key}`, error instanceof Error ? error.message : 'Unknown error');
+        }
+        throw new Error(`Failed to store secure item`);
     }
 }
 
@@ -42,7 +44,9 @@ export async function getSecureItem(key: string): Promise<string | null> {
     try {
         return await SecureStore.getItemAsync(key);
     } catch (error) {
-        console.error(`[SecureStore] Failed to get item: ${key}`, error);
+        if (__DEV__) {
+            console.error(`[SecureStore] Failed to get item: ${key}`, error instanceof Error ? error.message : 'Unknown error');
+        }
         return null;
     }
 }
@@ -55,7 +59,9 @@ export async function removeSecureItem(key: string): Promise<void> {
     try {
         await SecureStore.deleteItemAsync(key);
     } catch (error) {
-        console.error(`[SecureStore] Failed to remove item: ${key}`, error);
+        if (__DEV__) {
+            console.error(`[SecureStore] Failed to remove item: ${key}`, error instanceof Error ? error.message : 'Unknown error');
+        }
         // Don't throw - removal should be idempotent
     }
 }
@@ -83,7 +89,9 @@ export async function getSecureObject<T>(key: string): Promise<T | null> {
     try {
         return JSON.parse(serialized) as T;
     } catch (error) {
-        console.error(`[SecureStore] Failed to parse JSON for key: ${key}`, error);
+        if (__DEV__) {
+            console.error(`[SecureStore] Failed to parse JSON for key: ${key}`, error instanceof Error ? error.message : 'Unknown error');
+        }
         return null;
     }
 }

@@ -9,14 +9,22 @@
 export interface VaultItem {
     /** Unique identifier for the item */
     id: string;
-    /** Display name for the item */
+    /** Encrypted name (Base64) - metadata is also encrypted */
     name: string;
+    /** IV for name encryption (Base64) */
+    nameIv?: string;
+    /** HMAC for name integrity (Base64) */
+    nameHmac?: string;
     /** Type of item for UI categorization */
     type: VaultItemType;
     /** Encrypted data payload (Base64) */
     encryptedData: string;
     /** Initialization vector used for encryption (Base64) */
     iv: string;
+    /** HMAC-SHA256 for integrity verification (Base64) */
+    hmac: string;
+    /** Timestamp to prevent replay attacks */
+    timestamp: number;
     /** Timestamp when created */
     createdAt: number;
     /** Timestamp when last modified */

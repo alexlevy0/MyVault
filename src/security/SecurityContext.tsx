@@ -255,7 +255,7 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
             });
         } catch (error) {
             if (__DEV__) {
-                console.error('[Security] Initialization error:', error);
+                console.error('[Security] Initialization error:', error instanceof Error ? error.message : 'Unknown error');
             }
             setState(prev => ({
                 ...prev,
@@ -311,7 +311,7 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
             return true;
         } catch (error) {
             if (__DEV__) {
-                console.error('[Security] Setup error:', error);
+                console.error('[Security] Setup error:', error instanceof Error ? error.message : 'Unknown error');
             }
             setState(prev => ({
                 ...prev,
@@ -378,7 +378,7 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
             return true;
         } catch (error) {
             if (__DEV__) {
-                console.error('[Security] Login error:', error);
+                console.error('[Security] Login error:', error instanceof Error ? error.message : 'Unknown error');
             }
             setState(prev => ({
                 ...prev,
@@ -432,7 +432,7 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
             });
         } catch (error) {
             if (__DEV__) {
-                console.error('[Security] Reset error:', error);
+                console.error('[Security] Reset error:', error instanceof Error ? error.message : 'Unknown error');
             }
             setState(prev => ({
                 ...prev,

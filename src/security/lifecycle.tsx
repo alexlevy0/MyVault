@@ -57,7 +57,9 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
 
         if (mergedConfig.inactivityTimeout > 0 && isLoggedIn) {
             inactivityTimerRef.current = setTimeout(() => {
-                console.log('[Lifecycle] Inactivity timeout - locking app');
+                if (__DEV__) {
+                    console.log('[Lifecycle] Inactivity timeout - locking app');
+                }
                 lockAction();
             }, mergedConfig.inactivityTimeout);
         }
@@ -74,7 +76,9 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
         if (nextAppState === 'background' || nextAppState === 'inactive') {
             // App going to background
             backgroundTimeRef.current = Date.now();
-            console.log('[Lifecycle] App going to background');
+            if (__DEV__) {
+                console.log('[Lifecycle] App going to background');
+            }
         } else if (nextAppState === 'active') {
             // App coming back to foreground
             const backgroundTime = backgroundTimeRef.current;
@@ -83,10 +87,14 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
                 const timeInBackground = Date.now() - backgroundTime;
 
                 if (timeInBackground > mergedConfig.backgroundGracePeriod) {
-                    console.log(`[Lifecycle] Locking after ${timeInBackground}ms in background`);
+                    if (__DEV__) {
+                        console.log(`[Lifecycle] Locking after ${timeInBackground}ms in background`);
+                    }
                     lockAction();
                 } else {
-                    console.log('[Lifecycle] Within grace period, not locking');
+                    if (__DEV__) {
+                        console.log('[Lifecycle] Within grace period, not locking');
+                    }
                 }
             }
 
