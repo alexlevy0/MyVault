@@ -9,6 +9,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 
 import { PrivacyScreen } from '@/src/security/PrivacyScreen';
 import { useAppLifecycle } from '@/src/security/lifecycle';
@@ -60,57 +61,61 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { showPrivacyScreen } = useAppLifecycle();
+  const { showPrivacyScreen, recordActivity } = useAppLifecycle({
+    inactivityTimeout: 15000,
+  });
   return (
     <>
       <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#0F0F23',
-          },
-          headerTintColor: '#FFFFFF',
-          headerTitleStyle: {
-            fontWeight: '600',
-          },
-          contentStyle: {
-            backgroundColor: '#0F0F23',
-          },
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="setup"
-          options={{
-            title: 'Create Password',
-            headerShown: false,
+      <View style={{ flex: 1 }} onTouchStart={recordActivity}>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#0F0F23',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontWeight: '600',
+            },
+            contentStyle: {
+              backgroundColor: '#0F0F23',
+            },
           }}
-        />
-        <Stack.Screen
-          name="login"
-          options={{
-            title: 'Unlock Vault',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="home"
-          options={{
-            title: 'My Vault',
-            headerShown: false,
-            gestureEnabled: false, // Prevent swipe back
-          }}
-        />
-        <Stack.Screen
-          name="add-item"
-          options={{
-            title: 'Add Item',
-          }}
-        />
-      </Stack>
+        >
+          <Stack.Screen
+            name="index"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="setup"
+            options={{
+              title: 'Create Password',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="login"
+            options={{
+              title: 'Unlock Vault',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="home"
+            options={{
+              title: 'My Vault',
+              headerShown: false,
+              gestureEnabled: false, // Prevent swipe back
+            }}
+          />
+          <Stack.Screen
+            name="add-item"
+            options={{
+              title: 'Add Item',
+            }}
+          />
+        </Stack>
+      </View>
       <PrivacyScreen visible={showPrivacyScreen} />
     </>
   );
