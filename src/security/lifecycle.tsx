@@ -5,7 +5,8 @@
  * Handles automatic locking when app goes to background or after inactivity.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { usePreventScreenCapture } from 'expo-screen-capture';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useSecurity } from './SecurityContext';
 
@@ -36,9 +37,18 @@ export const DEFAULT_LIFECYCLE_CONFIG: LifecycleConfig = {
  */
 export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
     const { isLoggedIn, lockAction } = useSecurity();
-    const mergedConfig = { ...DEFAULT_LIFECYCLE_CONFIG, ...config };
+    
+    const mergedConfig = useMemo(
+        () => ({ ...DEFAULT_LIFECYCLE_CONFIG, ...config }),
+        [
+            config.lockOnBackground,
+            config.inactivityTimeout,
+            config.backgroundGracePeriod
+        ]
+    );
 
-    // Track when app went to background
+    usePreventScreenCapture(isLoggedIn ? 'app-security' : undefined);
+
     const backgroundTimeRef = useRef<number | null>(null);
     // Track last activity time for inactivity timeout
     const lastActivityRef = useRef<number>(Date.now());
@@ -101,15 +111,12 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
             backgroundTimeRef.current = null;
             resetInactivityTimer();
         }
-    }, [isLoggedIn, lockAction, mergedConfig, resetInactivityTimer]);
+    }, [isLoggedIn, lockAction, mergedConfig.lockOnBackground, mergedConfig.backgroundGracePeriod, resetInactivityTimer]);
 
     // Set up app state listener
     useEffect(() => {
         const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-        return () => {
-            subscription.remove();
-        };
+        return () => subscription.remove();
     }, [handleAppStateChange]);
 
     // Set up inactivity timer when logged in
