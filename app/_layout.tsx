@@ -10,14 +10,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { AppLifecycle } from '../src/appLifecycle/AppLifecycle';
+import { PrivacyScreen } from '@/src/security/PrivacyScreen';
+import { useAppLifecycle } from '@/src/security/lifecycle';
 import { FallbackLoader } from '../src/components/FallbackLoader';
 import { ToasterProvider } from '../src/contexts/ToasterContext';
 import { SecurityProvider } from '../src/security/SecurityContext';
 
 export {
-    // Catch any errors thrown by the Layout component.
-    ErrorBoundary
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -52,15 +53,14 @@ export default function RootLayout() {
   return (
     <SecurityProvider>
       <ToasterProvider>
-        <AppLifecycle>
-          <RootLayoutNav />
-        </AppLifecycle>
+        <RootLayoutNav />
       </ToasterProvider>
     </SecurityProvider>
   );
 }
 
 function RootLayoutNav() {
+  const { showPrivacyScreen } = useAppLifecycle();
   return (
     <>
       <StatusBar style="light" />
@@ -108,11 +108,10 @@ function RootLayoutNav() {
           name="add-item"
           options={{
             title: 'Add Item',
-            presentation: 'modal',
-            headerShown: false,
           }}
         />
       </Stack>
+      <PrivacyScreen visible={showPrivacyScreen} />
     </>
   );
 }

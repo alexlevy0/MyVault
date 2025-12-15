@@ -6,7 +6,7 @@
  */
 
 import { usePreventScreenCapture } from 'expo-screen-capture';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useSecurity } from './SecurityContext';
 
@@ -20,6 +20,8 @@ export interface LifecycleConfig {
     inactivityTimeout: number;
     /** Grace period before locking on background (ms) */
     backgroundGracePeriod: number;
+    /** Show privacy screen in multitasking view */
+    showPrivacyScreen: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export const DEFAULT_LIFECYCLE_CONFIG: LifecycleConfig = {
     lockOnBackground: true,
     inactivityTimeout: 5 * 60 * 1000, // 5 minutes
     backgroundGracePeriod: 5000, // 5 seconds grace period
+    showPrivacyScreen: true, // Show privacy screen in multitasking view
 };
 
 /**
@@ -43,11 +46,14 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
         [
             config.lockOnBackground,
             config.inactivityTimeout,
-            config.backgroundGracePeriod
+            config.backgroundGracePeriod,
+            config.showPrivacyScreen,
         ]
     );
 
     usePreventScreenCapture(isLoggedIn ? 'app-security' : undefined);
+
+    const [showPrivacyOverlay, setShowPrivacyOverlay] = useState(false);
 
     const backgroundTimeRef = useRef<number | null>(null);
     // Track last activity time for inactivity timeout
@@ -79,6 +85,20 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
      * Handle app state changes (background/foreground)
      */
     const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
+        if (mergedConfig.showPrivacyScreen && isLoggedIn) {
+            if (nextAppState === 'inactive' || nextAppState === 'background') {
+                setShowPrivacyOverlay(true);
+                if (__DEV__) {
+                    console.log('[Lifecycle] Privacy screen activated');
+                }
+            } else if (nextAppState === 'active') {
+                setShowPrivacyOverlay(false);
+                if (__DEV__) {
+                    console.log('[Lifecycle] Privacy screen deactivated');
+                }
+            }
+        }
+
         if (!isLoggedIn) {
             return;
         }
@@ -111,7 +131,14 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
             backgroundTimeRef.current = null;
             resetInactivityTimer();
         }
-    }, [isLoggedIn, lockAction, mergedConfig.lockOnBackground, mergedConfig.backgroundGracePeriod, resetInactivityTimer]);
+    }, [
+        isLoggedIn, 
+        lockAction, 
+        mergedConfig.lockOnBackground, 
+        mergedConfig.backgroundGracePeriod, 
+        mergedConfig.showPrivacyScreen,
+        resetInactivityTimer
+    ]);
 
     // Set up app state listener
     useEffect(() => {
@@ -124,6 +151,7 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
         if (isLoggedIn) {
             resetInactivityTimer();
         } else {
+            setShowPrivacyOverlay(false);
             if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
                 inactivityTimerRef.current = null;
@@ -151,6 +179,7 @@ export function useAppLifecycle(config: Partial<LifecycleConfig> = {}) {
         inactivityTimeout: mergedConfig.inactivityTimeout,
         /** Whether lock on background is enabled */
         lockOnBackground: mergedConfig.lockOnBackground,
+        showPrivacyScreen: showPrivacyOverlay,
     };
 }
 
