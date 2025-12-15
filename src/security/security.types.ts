@@ -48,6 +48,8 @@ export interface SecurityActions {
   resetAppAction: () => Promise<void>;
   /** Lock the app (same as logout but for auto-lock) */
   lockAction: () => void;
+   /** Login with biometric authentication */
+   biometricLoginAction: () => Promise<boolean>;
 }
 
 /**

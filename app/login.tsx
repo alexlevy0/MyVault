@@ -23,11 +23,18 @@ import {
     recordFailedAttempt,
 } from '../src/security/bruteForce';
 import { useSecurity } from '../src/security/SecurityContext';
+import { useBiometric } from '../src/security/useBiometric';
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { loginAction, resetAppAction, isLoading } = useSecurity();
+    const { loginAction, resetAppAction, isLoading, biometricLoginAction } = useSecurity();
     const { showToast } = useToaster();
+
+    const { 
+        isEnabled: biometricEnabled, 
+        authenticate: authenticateBiometric,
+        getBiometricTypeName 
+    } = useBiometric();
 
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +74,26 @@ export default function LoginScreen() {
 
         return () => clearInterval(timer);
     }, [lockoutCountdown, refreshBruteForceStatus]);
+
+    useEffect(() => {
+        if (biometricEnabled) {
+            handleBiometricLogin();
+        }
+    }, [biometricEnabled]);
+
+    const handleBiometricLogin = async () => {
+        const biometricSuccess = await authenticateBiometric();
+        if (biometricSuccess) {
+            // ✨ Utilise la nouvelle action au lieu de router.replace direct
+            const loginSuccess = await biometricLoginAction();
+            if (loginSuccess) {
+                showToast('success', 'Vault unlocked with biometrics');
+                router.replace('/home' as Href);
+            } else {
+                showToast('error', 'Biometric unlock failed. Use password instead.');
+            }
+        }
+    };
 
     const handleLogin = async () => {
         // Check brute-force protection first
@@ -148,12 +175,28 @@ export default function LoginScreen() {
             <View style={styles.content}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.icon}>{isLocked ? '🔐' : '🔒'}</Text>
+                    <Text style={styles.icon}>{isLocked ? '🔐' : biometricEnabled ? '👆' : '🔒'}</Text>
                     <Text style={styles.title}>Welcome Back</Text>
                     <Text style={styles.subtitle}>
-                        Enter your master password to unlock your vault
+                        {biometricEnabled 
+                            ? `Use ${getBiometricTypeName()} to unlock your vault`
+                            : 'Enter your master password to unlock your vault'
+                        }
                     </Text>
                 </View>
+
+                {biometricEnabled && !isLocked && (
+                    <TouchableOpacity
+                        style={styles.biometricButton}
+                        onPress={handleBiometricLogin}
+                        disabled={isLoading}
+                    >
+                        <Text style={styles.biometricIcon}>👆</Text>
+                        <Text style={styles.biometricText}>
+                            Unlock with {getBiometricTypeName()}
+                        </Text>
+                    </TouchableOpacity>
+                )}
 
                 {/* Lockout Warning */}
                 {isLocked && (
@@ -244,6 +287,28 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+    biometricButton: {
+        backgroundColor: '#8B5CF6',
+        borderRadius: 16,
+        paddingVertical: 20,
+        paddingHorizontal: 24,
+        marginBottom: 24,
+        alignItems: 'center',
+        shadowColor: '#8B5CF6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    biometricIcon: {
+        fontSize: 48,
+        marginBottom: 8,
+    },
+    biometricText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
     container: {
         flex: 1,
         backgroundColor: '#0F0F23',

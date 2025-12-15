@@ -17,9 +17,11 @@ import {
 } from 'react-native';
 import { useToaster } from '../src/contexts/ToasterContext';
 import { useSecurity } from '../src/security/SecurityContext';
+import { useBiometric } from '../src/security/useBiometric';
 import { useVaultItem } from '../src/security/useVaultItem';
 import { VaultItem } from '../src/vault/vault.types';
 import { VaultRepository } from '../src/vault/VaultRepository';
+
 
 interface ItemWithName extends VaultItem {
     decryptedName: string | null;
@@ -220,6 +222,51 @@ export default function HomeScreen() {
 
     const isLoading = securityLoading || vaultLoading || isLoadingItems;
 
+    const {
+        capabilities,
+        isEnabled: biometricEnabled,
+        isLoading: biometricLoading,
+        enableBiometric,
+        disableBiometric,
+        getBiometricTypeName,
+    } = useBiometric();
+
+    const handleToggleBiometric = async () => {
+        if (biometricEnabled) {
+            Alert.alert(
+                'Disable Biometric',
+                `Turn off ${getBiometricTypeName()} unlock?`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Disable',
+                        style: 'destructive',
+                        onPress: async () => {
+                            await disableBiometric();
+                            showToast('info', 'Biometric unlock disabled');
+                        },
+                    },
+                ]
+            );
+        } else {
+            if (!capabilities?.hasHardware) {
+                showToast('error', 'Biometric hardware not available');
+                return;
+            }
+            if (!capabilities?.isEnrolled) {
+                showToast('error', 'No biometrics enrolled on device');
+                return;
+            }
+
+            const success = await enableBiometric();
+            if (success) {
+                showToast('success', `${getBiometricTypeName()} unlock enabled`);
+            } else {
+                showToast('error', 'Failed to enable biometric unlock');
+            }
+        }
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -237,6 +284,30 @@ export default function HomeScreen() {
                     <Text style={styles.settingsButtonText}>🔒</Text>
                 </TouchableOpacity>
             </View>
+
+            {capabilities?.hasHardware && capabilities?.isEnrolled && (
+                <View style={styles.biometricSection}>
+                    <TouchableOpacity
+                        style={styles.biometricToggle}
+                        onPress={handleToggleBiometric}
+                        disabled={biometricLoading}
+                    >
+                        <View style={styles.biometricInfo}>
+                            <Text style={styles.biometricIcon}>
+                                {biometricEnabled ? '✓' : '○'}
+                            </Text>
+                            <View>
+                                <Text style={styles.biometricLabel}>
+                                    {getBiometricTypeName()} Unlock
+                                </Text>
+                                <Text style={styles.biometricSubtext}>
+                                    {biometricEnabled ? 'Enabled' : 'Disabled'}
+                                </Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {items.length === 0 && !isLoadingItems ? (
                 <ScrollView
@@ -445,5 +516,37 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#EF4444',
         fontWeight: '600',
+    },
+    biometricSection: {
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#2A2A3E',
+    },
+    biometricToggle: {
+        backgroundColor: '#1A1A2E',
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#2A2A3E',
+    },
+    biometricInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    biometricIcon: {
+        fontSize: 24,
+        marginRight: 12,
+        color: '#8B5CF6',
+    },
+    biometricLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    biometricSubtext: {
+        fontSize: 12,
+        color: '#A0A0B2',
     },
 });

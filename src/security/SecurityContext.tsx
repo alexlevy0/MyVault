@@ -19,10 +19,13 @@ import React, {
 } from 'react';
 import {
     clearAllSecureStorage,
+    getSecureItem,
     getSecureObject,
+    removeSecureItem,
     setSecureObject,
     STORAGE_KEYS,
 } from '../storage/secureStore';
+import { BIOMETRIC_STORAGE_KEY } from './biometric.types';
 import {
     clearAllMemory,
     MEMORY_KEYS,
@@ -43,6 +46,8 @@ const initialState: SecurityState = {
     isLoading: true,
     error: null,
 };
+
+const BIOMETRIC_KEY_STORAGE = 'vault_biometric_key';
 
 // Create context with undefined default
 const SecurityContext = createContext<SecurityContextValue | undefined>(undefined);
@@ -422,6 +427,8 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
         try {
             clearAllMemory();
             await clearAllSecureStorage();
+            await removeSecureItem(BIOMETRIC_KEY_STORAGE);
+            await removeSecureItem(BIOMETRIC_STORAGE_KEY);
 
             setState({
                 isInitialized: true,
@@ -442,12 +449,72 @@ export function SecurityProvider({ children }: SecurityProviderProps) {
         }
     }, []);
 
+    /**
+    * Login with biometric authentication
+    * Retrieves stored derived key and restores session
+    */
+    const biometricLoginAction = useCallback(async (): Promise<boolean> => {
+        setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+        try {
+            // Get stored derived key (only available if biometric is enabled)
+            const storedKey = await getSecureItem(BIOMETRIC_KEY_STORAGE);
+
+            if (!storedKey) {
+                setState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    error: 'Biometric key not found. Please use password.',
+                }));
+                return false;
+            }
+
+            // Verify we still have account
+            const storedKeyInfo = await getSecureObject<DerivedKeyInfo>(
+                STORAGE_KEYS.DERIVED_KEY_INFO
+            );
+
+            if (!storedKeyInfo) {
+                setState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    error: 'No account found',
+                }));
+                return false;
+            }
+
+            // Store derived key in memory for encryption operations
+            setMemoryKey(MEMORY_KEYS.DERIVED_KEY, storedKey);
+
+            setState({
+                isInitialized: true,
+                isLoggedIn: true,
+                hasAccount: true,
+                isLoading: false,
+                error: null,
+            });
+
+            return true;
+        } catch (error) {
+            if (__DEV__) {
+                console.error('[Security] Biometric login error:', error instanceof Error ? error.message : 'Unknown error');
+            }
+            setState(prev => ({
+                ...prev,
+                isLoading: false,
+                error: 'Biometric login failed',
+            }));
+            return false;
+        }
+    }, []);
+
     // Combine state and actions
     const value: SecurityContextValue = {
         ...state,
         setupAction,
         loginAction,
         logoutAction,
+        biometricLoginAction,
         lockAction,
         resetAppAction,
     };
