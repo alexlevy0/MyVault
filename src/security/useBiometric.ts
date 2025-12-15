@@ -347,10 +347,13 @@ export function useBiometric(): UseBiometricReturn {
                 return false;
             }
 
-            // Verify user intent with biometric authentication
-            const authenticated = await authenticate('Confirm to enable biometric unlock');
-            if (!authenticated) {
-                // Error already set by authenticate()
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Confirm to enable biometric unlock',
+                cancelLabel: 'Cancel',
+                disableDeviceFallback: true,
+            });
+            
+            if (!result.success) {
                 return false;
             }
 
@@ -394,7 +397,7 @@ export function useBiometric(): UseBiometricReturn {
         } finally {
             operationInProgressRef.current = false;
         }
-    }, [checkAvailability, authenticate]);
+    }, [checkAvailability]);
 
     /**
      * Disable biometric authentication
